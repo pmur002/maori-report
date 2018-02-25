@@ -1,0 +1,1018 @@
+<html>
+<head>
+  <style type="text/css">
+    @media print {
+      body { }
+      p.img { text-align: center; page-break-inside: avoid }
+      img.CC { display: inline }
+    }
+    @media screen {
+      body { max-width: 800px; margin: auto }
+      p.img { text-align: center }
+      img.CC { display: inline }
+    }
+    p.date {
+      font-size: smaller;
+      margin: 0;
+    }
+    p.versionHistory {
+      color: gray
+    }
+    p.versionHistory a {
+      color: gray
+    }
+    p.ref {
+      text-indent: -2em;
+      padding-left: 2em;
+    }
+    table {
+      border-collapse: collapse;
+      margin: auto;
+    }
+    table, th, td {
+      border: 1px solid black;
+    }
+    td {
+      padding: 5px;
+    }
+    td.letter {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>Putting the Macron in M&#257;ori:<br/>Accented text in R Graphics</h1>
+  <p>
+    <span style="font-style: italic">by Paul Murrell</span>
+    <a href="http://orcid.org"><img alt="" src="https://www.stat.auckland.ac.nz/~paul/ORCID/ORCiD.png" style="width: 16px; height: 16px; vertical-align: middle" /></a> <span style="font-family: mono; font-size: small"><a href="http://orcid.org/0000-0002-3224-8858">http://orcid.org/0000-0002-3224-8858</a></span>
+  </p>
+  <p class="date">
+    Version 1:
+    <rcode echo="FALSE" results="asis">
+cat(format(Sys.Date(), "%A %d %B %Y"))
+    </rcode>
+  </p>
+
+  <rcode id="init" echo="FALSE" message="FALSE" results="hide">
+opts_chunk$set(comment=" ", tidy=FALSE)
+options(width=100)
+  </rcode>
+
+  <hr/>
+  <p>
+    <a rel="license"
+    href="http://creativecommons.org/licenses/by/4.0/"><img class="CC"
+    alt="Creative Commons License" style="border-width:0"
+    src="https://i.creativecommons.org/l/by/4.0/88x31.png"/></a><br/><span
+    xmlns:dct="http://purl.org/dc/terms/"
+    property="dct:title">This document</span>
+    by <span xmlns:cc="http://creativecommons.org/ns#"
+    property="cc:attributionName">Paul
+    Murrell</span> is licensed under a <a rel="license"
+    href="http://creativecommons.org/licenses/by/4.0/">Creative
+    Commons Attribution 4.0 International License</a>.
+  </p>
+  <hr/>
+  <p>
+    This report describes different methods for correctly rendering 
+    macrons in M&#257;ori text within R plots.  The topics covered will
+    also have relevance to rendering other special characters in
+    R graphics and possibly to rendering macrons in other software.
+  </p>
+
+  <toc/>
+
+  <h2><a name="intro">Introduction</a></h2>
+  <p>
+    Te reo M&#257;ori (the M&#257;ori language) 
+    is an official language of New Zealand. 
+    In written M&#257;ori, the pronunciation of vowels can be
+    modified by placing a macron above the vowel.  A macron indicates
+    a "long vowel" and can significantly alter the meaning of a word,
+    e.g., keke vs k&#275;k&#275; (cake vs armpit). 
+  </p>
+  <p>
+    The macron is the only accent required for written 
+    M&#257;ori and the accent can only be applied to vowels,
+    so the full set of accented characters are:
+  </p>
+  <table>
+    <tr>
+      <td>
+        lower case a, with macron
+      </td>
+      <td class="letter">
+        &#257;
+      </td>
+      <td style="border: none; background-color: #DDDDDD">
+      </td>
+      <td>
+        upper case A, with macron
+      </td>
+      <td class="letter">
+        &#256;
+      </td>
+    </tr>
+    <tr>
+      <td>
+        lower case e, with macron
+      </td>
+      <td class="letter">
+        &#275;
+      </td>
+      <td style="border: none; background-color: #DDDDDD">
+      </td>
+      <td>
+        upper case E, with macron
+      </td>
+      <td class="letter">
+        &#274;
+      </td>
+    </tr>
+    <tr>
+      <td>
+        lower case i, with macron
+      </td>
+      <td class="letter">
+        &#299;
+      </td>
+      <td style="border: none; background-color: #DDDDDD">
+      </td>
+      <td>
+        upper case I, with macron
+      </td>
+      <td class="letter">
+        &#298;
+      </td>
+    </tr>
+    <tr>
+      <td>
+        lower case o, with macron
+      </td>
+      <td class="letter">
+        &#333;
+      </td>
+      <td style="border: none; background-color: #DDDDDD">
+      </td>
+      <td>
+        upper case O, with macron
+      </td>
+      <td class="letter">
+        &#332;
+      </td>
+    </tr>
+    <tr>
+      <td>
+        lower case u, with macron
+      </td>
+      <td class="letter">
+        &#363;
+      </td>
+      <td style="border: none; background-color: #DDDDDD">
+      </td>
+      <td>
+        upper case U, with macron
+      </td>
+      <td class="letter">
+        &#362;
+      </td>
+    </tr>
+  </table>
+  <p>
+    This document focuses on the problem of accurately producing these
+    accented characters within a plot
+    in R graphics (<a href="#R"/>).
+    We will demonstrate some of the problems and then provide an
+    explanation of why the problems arise and how to solve them.
+    Readers who just want an answer might like to skip straight to
+    the <a href="#summary"/>.
+  </p>
+
+  <h2><a name="problem">Some problems</a></h2>
+  <p>
+    There is a surprising amount of complexity involved in correctly producing
+    any sort of text;  we usually do not see this complexity simply because
+    producing text mostly just works.  
+  </p>
+  <p>
+    In this section, we will look at
+    a few simple demonstrations of how things can easily go
+    wrong when we try to produce a macron-accented character in R.  
+    In this document, 
+    we are only interested in using macron-accented characters
+    within R character vectors (not within R symbol names).
+  </p>
+  <p>
+    The following code reads in a 
+    <a href="http://archive.stats.govt.nz/browse_for_stats/snapshots-of-nz/nz-social-indicators/Home/Culture%20and%20identity/maori-lang-speakers.aspx">data set from Statistics New Zealand</a>
+    that contains the percentage of the M&#257;ori population who 
+    speak te reo M&#257;ori (based on the last three censuses).
+  </p>
+  <rcode>
+speakers <- read.csv("StatsNZ/maori-language-speakers.csv", header=FALSE,
+                     col.names=c("Census", "Speakers", "Total", "Percent"))
+speakers
+  </rcode>
+  <p>
+    We want to produce a simple bar plot of these data, with a
+    title that includes the word "M&#257;ori", appropriately accented.
+  </p>
+
+  <h3>Input</h3>
+  <p>
+    Our first attempt involves
+    cutting-and-pasting an "&#257;" character from a Word document
+    (that already contains the character &#257;)
+    into our R code.  Unless otherwise specified, we will be working
+    on Windows.
+  </p>
+  <rcode eval="FALSE">
+barplot(speakers$Percent, names.arg=speakers$Census, ylab="Percent",
+        main="Speakers of te reo Māori in the Māori ethnic group",
+        family="Microsoft New Tai Lue")
+  </rcode>
+  <p>
+    Unfortunately, even though we can see the "&#257;" character
+    in our code, it mysteriously becomes a normal "a" in the plot.
+  </p>
+  <p>
+    <img src="StatsNZ/MSNTL-cut-and-paste.png" />
+  </p>
+  <p>
+    The problem here is partly to do with how we type a
+    macron-accented character in R.  It is unlikely that we have an
+    "&#257;" key on our keyboard, so we have to find some other way to
+    input that character.
+  </p>
+  <p>
+    The problem is also to do with encodings (how characters are stored
+    in software).  Different operating systems and different applications
+    can use different encodings and any mismatch between encodings can
+    cause problems.  In this case, we are on Windows 
+    and copying text between Word and R, and  Word on Windows uses a different
+    encoding than R on Windows.  In the conversion from the Word
+    encoding to the R encoding, the "&#257;" has been converted to
+    a normal "a".
+  </p>
+
+  <h3>Fonts</h3>
+  <p>
+    Next, we try using a special escape sequence, "\u101", in our code
+    for the &#257; character.  In R, an escape sequence
+    of the form "\unnnn" specifies a UNICODE code point (<a href="#unicode"/>).
+    This is one way to directly input 
+    "&#257;" to R and it avoids the conversion problem because we
+    are not transferring the "&#257;" character from one application to
+    another.  
+  </p>
+  <rcode eval="FALSE">
+barplot(speakers$Percent, names.arg=speakers$Census, ylab="Percent",
+        main="Speakers of te reo M\u101ori in the M\u101ori ethnic group",
+        family="Microsoft New Tai Lue")
+  </rcode>
+  <p>
+    Unfortunately, that just produces an
+    empty rectangle in the plot.
+  </p>
+  <p>
+    <img src="StatsNZ/MSNTL-unicode-escape.png" />
+  </p>
+  <p>
+    The problem here is with the font that we are using.  We are now
+    correctly specifying the character that we want, but that character
+    does not exist in the font we are using, so we just get an 
+    empty rectangle.
+  </p>
+
+  <h3>Graphics formats</h3>
+  <p>
+    Next, we try a different font.  We specify the font family "sans",
+    which on Windows is the Arial font.
+  </p>
+  <rcode eval="FALSE">
+barplot(speakers$Percent, names.arg=speakers$Census, ylab="Percent",
+        main="Speakers of te reo M\u101ori in the M\u101ori ethnic group",
+        family="sans")
+  </rcode>
+  <p>
+    Finally, we get the correct  result on screen.
+  </p>
+  <p>
+    <img src="StatsNZ/sans-unicode-escape.png" />
+  </p>
+  <p>
+    Unfortunately, when we save the screen plot to PDF format for
+    inclusion in a report, the
+    "&#257;" mysteriously changes back to a normal "a";  
+    the macron disappears.
+  </p>
+  <rcode eval="FALSE">
+pdf()
+barplot(speakers$Percent, names.arg=speakers$Census, ylab="Percent",
+        main="Speakers of te reo M\u101ori in the M\u101ori ethnic group",
+        family="sans")
+dev.off()
+  </rcode>
+  <p>
+    <img src="StatsNZ/sans-unicode-escape-pdf.png" />
+  </p>
+  <p>
+    Here we have another encoding problem, but this time R is using a
+    different encoding for a character vector compared to the encoding that it
+    uses for the PDF graphics device.  In the conversion from a character
+    vector to the PDF file, the "&#257;" has been converted to a normal "a".
+  </p>
+  <p>
+    So in terms of producing text in R graphics, the things we need to
+    be aware of are how we input the text, the fonts we are using, and 
+    the encodings we are using, with the latter depending (at least) on
+    our operating system and the graphics device we are using.
+  </p>
+
+  <h2><a name="solution">Some solutions</a></h2>
+  <p>
+    This section provides some solutions for the problems
+    described above.  
+  </p>
+  <h3>Graphics formats</h3>
+  <p>
+    Working backwards, one quick way to solve the encoding problem with 
+    the PDF graphics device is not to use PDF.
+    If we can see the right result on screen,
+    then we should be able to reproduce that result with a raster format,
+    like PNG.
+    This will not produce as nice a result as the vector PDF version
+    and we may have to play with the resolution of the PNG to get
+    a good result for use in a report, but the characters should
+    at least look correct.
+  </p>
+  <rcode eval="FALSE">
+png()
+barplot(speakers$Percent, names.arg=speakers$Census, ylab="Percent",
+        main="Speakers of te reo M\u101ori in the M\u101ori ethnic group",
+        family="sans")
+dev.off()
+  </rcode>
+  <p>
+    <img src="StatsNZ/sans-unicode-escape.png" />
+  </p>
+  <p>
+    If we really want PDF output, another simple option is to
+    use the PDF graphics device that is provided by the
+    <code>cairo_pdf</code> function (instead of the standard PDF device
+    that is provided by the <code>pdf</code> function).
+    The <code>cairo_pdf</code>
+    device uses the same encoding as the "\u101" character
+    string, so there is no conversion of the "&#257;" character.
+  </p>
+  <rcode eval="FALSE">
+cairo_pdf()
+barplot(speakers$Percent, names.arg=speakers$Census, ylab="Percent",
+        main="Speakers of te reo M\u101ori in the M\u101ori ethnic group",
+        family="sans")
+dev.off()
+  </rcode>
+  <p>
+    <img src="StatsNZ/windows-plot-cairo-pdf.png" />
+  </p>
+  <p>
+    The <code>cairo_pdf</code> device works because it is based on the 
+    Cairo Graphics library.  The standard SVG graphics device is also
+    based on Cairo Graphics, so it works with this example too.
+  </p>
+
+  <h3>Fonts</h3>
+  <p>
+    In the scenario above, we started off using a non-standard font
+    that did not contain the "&#257;" character
+    and switched back to the standard "sans" font in order to get
+    a font that contained the "&#257;" character.
+    Another possible solution is that the font contains just the accent that we 
+    want and we can combine it with a normal character.
+    The code below does this by using the original non-standard font
+    and specifying the text "a\u304", where the escape 
+    sequence "\u304" specifies the UNICODE code point for 
+    a combining macron accent.
+  </p>
+  <rcode eval="FALSE">
+barplot(speakers$Percent, names.arg=speakers$Census, ylab="Percent",
+        main="Speakers of te reo Ma\u304ori in the Ma\u304ori ethnic group",
+        family="Microsoft New Tai Lue")
+  </rcode>
+  <p>
+    <img src="StatsNZ/MSNTL-unicode-combine.png" />
+  </p>
+  <p>
+    Yet another possibility is that we want to specify a character that
+    is unusual and is not in a standard font, so we need to tell R
+    to use a particular font.  How we do that depends on our operating 
+    system and the graphics format we want to produce.
+  </p>
+  <p>
+    On Linux, with Cairo graphics support, we should be able to simply 
+    specify the name of any font that has been installed on the machine
+    for producing plots on screen (and in raster formats).
+  </p>
+  <p>
+    However, for Windows, and for PDF output, we need to register a font
+    with R first.  For example, the following code registers 
+    the "Microsoft New Tai Lue" font for use with R graphics on Windows.
+  </p>
+  <rcode eval="FALSE">
+WindowsFonts("Microsoft New Tai Lue"=WindowsFont("Microsoft New Tai Lue"))
+  </rcode>
+  <p>
+    Once that code has been run, we can use "Microsoft New Tai Lue" in
+    the <code>family</code> paramter of the <code>barplot</code> function
+    to specify the use of that font for text.
+  </p>
+  <p>
+    The corresponding functions for registering fonts for PDF output
+    are <code>pdfFonts</code> and <code>Type1Font</code>.
+  </p>
+  <p>
+    The 'extrafont' package simplifies the Windows and/or PDF set up
+    through its <code>font_import</code> and <code>loadfonts</code> functions,
+    which will register all available system fonts for use with 
+    Windows and/or PDF.  
+  </p>
+  <p>
+    The <code>cairo_pdf</code> PDF device
+    allows us to just use the names of system fonts without having
+    to register anything.
+  </p>
+
+  <h3>Input</h3>
+  <p>
+    Typing an "&#257;" character directly into R is not straightforward
+    and depends on our operating system and the R interface that we
+    are using.
+  </p>
+  <p>
+    As has been demonstrated, one approach is to type a UNICODE code point
+    escape sequence, like "\u101".  The disadvantage of this is 
+    that it requires a lot of typing.  On the other hand, because the 
+    escape sequence 
+    just uses standard characters, 
+    there are no encoding issues.
+    This should work on all operating systems and with all R interfaces.
+    It is also very portable (e.g., if we want to share
+    our code with others).  We can also even use text 
+    substitution to relieve the typing burden (as demonstrated by
+    <a href="https://scrogster.wordpress.com/category/r/">Michael Scroggie</a>).
+    The table below shows the code points (decimal) and R escape sequences
+    for the macron-accented 
+    characters required for written M&#257;"ori.
+  </p>
+  <table>
+    <tr>
+      <td>
+        257
+      </td>
+      <td>
+        "\u101"
+      </td>
+      <td class="letter">
+        &#257;
+      </td>
+      <td style="border: none; background-color: #DDDDDD">
+      </td>
+      <td>
+        256
+      </td>
+      <td>
+        "\u100"
+      </td>
+      <td class="letter">
+        &#256;
+      </td>
+    </tr>
+    <tr>
+      <td>
+        275
+      </td>
+      <td>
+        "\u113"
+      </td>
+      <td class="letter">
+        &#275;
+      </td>
+      <td style="border: none; background-color: #DDDDDD">
+      </td>
+      <td>
+        274
+      </td>
+      <td>
+        "\u112"
+      </td>
+      <td class="letter">
+        &#274;
+      </td>
+    </tr>
+    <tr>
+      <td>
+        299
+      </td>
+      <td>
+        "\u12b"
+      </td>
+      <td class="letter">
+        &#299;
+      </td>
+      <td style="border: none; background-color: #DDDDDD">
+      </td>
+      <td>
+        298
+      </td>
+      <td>
+        "\u12a"
+      </td>
+      <td class="letter">
+        &#298;
+      </td>
+    </tr>
+    <tr>
+      <td>
+        333
+      </td>
+      <td>
+        "\u14d"
+      </td>
+      <td class="letter">
+        &#333;
+      </td>
+      <td style="border: none; background-color: #DDDDDD">
+      </td>
+      <td>
+        332
+      </td>
+      <td>
+        "\u14c"
+      </td>
+      <td class="letter">
+        &#332;
+      </td>
+    </tr>
+    <tr>
+      <td>
+        363
+      </td>
+      <td>
+        "\u16b"
+      </td>
+      <td class="letter">
+        &#363;
+      </td>
+      <td style="border: none; background-color: #DDDDDD">
+      </td>
+      <td>
+        362
+      </td>
+      <td>
+        "\u16a"
+      </td>
+      <td class="letter">
+        &#362;
+      </td>
+    </tr>
+  </table>
+  <p>
+    If we want to explicitly type a macron-accented character,
+    it is possible to have a keyboard 
+    with macron-accented characters, like the one sold 
+    by <a href="http://tereolearningmedia.co.nz/te-reo-keyboard/">te reo
+    learning media</a>, in which case we require a single key stroke, though
+    this may only work with Windows or macOS.
+  </p>
+  <p>
+    On Windows, the operating system allows us to type a UNICODE code point
+    followed by Alt-x, but this is not supported by all software.
+    For example, this works in Word, but unfortunately not in Rgui or 
+    <a href="https://www.rstudio.com/">RStudio</a>.
+  </p>
+  <p>    
+    It is also possible to 
+    <a href="https://www.stat.auckland.ac.nz/~kimihia/maori-keyboard">set up a M&#257;ori keyboard on Windows</a>
+<!--  
+    "Control Panel"..."Clock, Language, and Region"..."Change input
+    methods"..."Add a language"..."Reo Maori" then Windows key + Space
+    to switch between input methods (change to Maori) 
+-->
+    and then the key sequence ` (backtick) followed by "a" produces
+    an "&#257;".  Again, this requires support in software applications
+    and does not work in Rgui.  However, this does work in RStudio.
+  </p>
+  <p>
+    Part of the original problem, which involved cutting and pasting text
+    from another software application into R, was due to running R on Windows.
+    A radical solution to that part of the problem is not to run Windows.
+    R on Linux uses the same encoding as most other Linux software,
+    so the cutting-and-pasting issue disappears.  For example, we can
+    write code that includes an "&#257;" in Emacs and 
+    safely cut-and-paste into R.
+  </p>
+  <p>
+    If we are working on Linux, there is an operating system key sequence
+    Ctrl-Shift-u followed by UNICODE code point.  This works when
+    running R in the shell, but not in RStudio or Emacs.
+    It is also possible to set up a M&#257;ori
+    keyboard 
+<!--
+    "System Settings"..."Text
+    Entry"..."Input Sources"..."+"(to add new
+    keyboard)..."Maori"..."&lt;up arrow&gt;"(to move Maori to top),
+-->
+    and define a compose key 
+<!--"System
+    Settings"..."Keyboard"..."Shortcuts"..."Typing"..."Compose
+    Key"..."Right Win"
+-->
+    then type the composeKey followed by - (dash) followed by "a" to
+    produce an "&#257;" character.  This works in the shell and
+    RStudio, but not Emacs.  Of course, Emacs being Emacs, we can
+    define any keyboard shortcut we like.  For example, 
+    adding the following to our .emacs file allows us to type
+    &lt;F9&gt; followed by "a" to produce "&#257;".  
+<pre>
+(define-key key-translation-map (kbd "&lt;f9&gt; a") (kbd "ā"))    
+</pre>
+    There is also a general Emacs keystroke sequence
+    Ctrl-x 8 &lt;RET&gt; followed by a UNICODE code point &lt;RET&gt;, 
+    though it is less appropriate to call that a "shortcut".
+  </p>
+
+  <h3>Encodings</h3>
+  <p>
+    Behind many of the issues already described lurks the idea of 
+    character encodings.  A character encoding describes a mapping between
+    characters like "a" and "&#257;" and how those characters are
+    stored in computer memory.  For example, R on Windows uses an
+    encoding called CP1252.  This is a single-byte encoding 
+    (it uses only a single byte to
+    represent characters) so it is limited to 256 (2^8) different characters.
+    The character "a" is stored
+    as the number 97 (61 in hexadecimal notation), but there is no 
+    representation for "&#257;" at all.
+    R on Linux uses an encoding called UTF-8, which is a multi-byte
+    encoding.  This means that it can represent all characters for all
+    languages.  For example, the character "a" is stored as the number 97 
+    (61 hexadecimal) in
+    a single byte and the character "&#257;" is stored using two bytes
+    containing the numbers 196 and 129 (C4 81 in hexadecimal).
+  </p>
+  <p>
+    It is crucial to know what encoding is being used for a piece
+    of text.  For example, if we have a series of three bytes of 
+    computer memory containing 97, 196, and 129 (61 C4 81), 
+    this could be interpreted as 
+    either "a&#257;" using UTF-8 or "a&#196;&#129;" using CP1252
+    (196 is &#196; in CP1252 and 129 is undefined).
+  </p>
+  <p>
+    We can demonstrate this in R by changing the encoding that R 
+    uses for character values.  The following code (for Linux)
+    first sets the character encoding to ISO-8859-1 (which is similar to 
+    CP1252), interprets three bytes as characters, then set the 
+    encoding to UTF-8 and interprets the same three bytes as different
+    characters.
+  </p>
+  <rcode>
+Sys.setlocale("LC_CTYPE", "en_NZ.iso88591")
+rawToChar(as.raw(c(97, 196, 129)))
+Sys.setlocale("LC_CTYPE", "en_NZ.UTF-8")
+rawToChar(as.raw(c(97, 196, 129)))
+  </rcode>
+  <p>
+    If we know the encoding of a piece of text (a series of bytes),
+    we can convert from one to another, but not all conversions will
+    be successful because, as shown above, some encodings contain
+    more characters than others.  In the examples below, 
+    the letter "a" converts happily from UTF-8 to CP1252, but
+    attempting to convert "&#257;" from UTF-8 to CP1252 results in
+    either a missing value or a normal "a" character.
+  </p>
+  <rcode>
+iconv("a", from="UTF-8", to="CP1252")
+iconv("\u101", from="UTF-8", to="CP1252")
+iconv("\u101", from="UTF-8", to="CP1252//TRANSLIT")
+  </rcode>
+  <p>
+    The above description and demonstration hopefully helps to explain how the
+    original cut-and-paste problem occurred (R on Windows was using CP1252
+    for input
+    and Word was a different encoding and the conversion between encodings 
+    changed "&#257;" to "a").
+  </p>
+  <p>
+    The other encoding problem occurred when we tried to produce a PDF
+    version of a plot that looked correct on screen.  
+    The problem here was that the R PDF device uses the single-byte 
+    encoding ISO-8859-1, but
+    the character vector for the plot label contained
+    "M\u101ori", which R stores using UTF-8.  The conversion from
+    the UTF-8 character vector to the ISO-8859-1 PDF file changed
+    "&#257;" to "a".
+  </p>
+  <rcode>
+iconv("\u101", from="UTF-8", to="ISO-8859-1//TRANSLIT")
+  </rcode>
+  <p>
+    Armed with a little knowledge about what is causing the problem,
+    it is possible to construct a solution in this case.
+    The key is that we need to specify for the PDF device 
+    a single-byte encoding that contains 
+    the "&#257;" character (plus other macron-accented characters).
+    The <code>pdf</code> 
+    function has an <code>encoding</code> argument that allows
+    us to specify an encoding file.
+    R comes with several standard encoding files, including ISOLatin1.enc (for
+    ISO-8859-1), WinAnsi.enc (for CP1252), and ISOLatin7.enc, which is an
+    encoding that contains macron-accented characters.
+    The lines of the ISOLatin7.enc file that refer to macron-accented
+    characters are shown below and we can see that, for example, 
+    <code>amacron</code> is entry number 226 (342 in octal notation).
+  </p>
+  <rcode echo="FALSE">
+cat(readLines("PDF/ISOLatin7.enc")[30:39], sep="\n")
+  </rcode>
+  <p>
+    To get this to work, we also need to make sure that R is
+    using the same encoding as we want to use in the PDF file,
+    by setting the character encoding that R is using.
+    If we did not do this, we would run into problems with converting
+    characters between different encodings, and we all know how badly
+    that goes.
+  </p>
+  <p>
+    The following code shows an example for Windows.  
+    First, we set the R character vector encoding to CP1257 (the
+    Windows equivalent of ISO-Latin-7), then we open a <code>pdf</code>
+    device with encoding ISO-Latin-7, then we specify the "&#257;" 
+    character using the octal escape sequence <code>"\342"</code>.
+    At the end we switch back to the character encoding that we
+    started with.
+  </p>
+  <rcode eval="FALSE">
+## Windows
+Sys.setlocale("LC_CTYPE", "Greek_Greece.1257")
+pdf(compress=FALSE, encoding="ISOLatin7.enc", width=5, height=1)
+barplot(speakers$Percent, names.arg=speakers$Census, ylab="Percent",
+        main="Speakers of te reo M\342ori in the M\342ori ethnic group")
+dev.off()
+## Reset
+Sys.setlocale("LC_CTYPE", "English_New Zealand.1252")
+  </rcode>
+  <p>
+    Another way to avoid the character encoding conversions is to
+    stick to the <a href="http://www.asciitable.com/">ASCII</a>
+    range of characters 
+    because (almost) all encodings are (almost) the same in that range.
+    To do this we can create a custom encoding file.  For example, 
+    the first few lines of a custom encoding file called "macrons.enc"
+    is shown below, with the macron-accented vowels at positions
+    16 to 28 (20 to 34 in octal notation).
+  </p>
+  <rcode echo="FALSE">
+cat(readLines("PDF/macrons.enc")[1:10], sep="\n")
+  </rcode>
+  <p>
+    The following code uses that encoding file 
+    and specifies macron-accented characters via octal escape 
+    sequences.
+    In this example, we are using
+    the 'grid' package to just draw the accented characters 
+    by themselves on the page.
+  </p>
+  <rcode>
+library(grid)
+  </rcode>
+  <rcode results="hide" message="FALSE">
+pdf("PDF/macrons.pdf", compress=FALSE, encoding="./PDF/macrons.enc",
+    width=5, height=1)
+grid.text("\020 \021 \022 \023 \024 \030 \031 \032 \033 \034",
+          gp=gpar(cex=3))
+dev.off()
+  </rcode>
+  <p>
+    Another important detail, especially if a PDF plot is to be 
+    embedded within a larger report, such as a LaTeX document, is
+    to make sure that the font is embedded in the PDF file.
+    This happens automatically if we use the <code>cairo_pdf</code>
+    graphics device, but if we use the standard <code>pdf</code>
+    device, we can use the <code>embedFonts</code> function,
+    as shown below.
+  </p>
+  <rcode>
+embedFonts("PDF/macrons.pdf", outfile="PDF/macrons-embed.pdf")
+  </rcode>
+  <rcode echo="FALSE">
+system("convert -density 69 PDF/macrons-embed.pdf PDF/macrons-embed-pdf.png")
+  </rcode>
+  <p>
+    <img src="PDF/macrons-embed-pdf.png" />
+  </p>
+
+<!--
+  <h2><a name="examples">Some examples</a></h2>
+  <h3>
+    Ubuntu Linux, en_US.UTF-8 locale, GNOME terminal, R 3.4.3.
+  </h3>
+  <h4>Input</h4>
+  <h4>Output</h4>
+  <p>
+    Plotting on screen (Cairo device) just works.
+    Should be same for raster devices like png().
+  </p>
+  <p>
+    Plotting to pdf() fails (two dots in place of a-macron).
+    Ditto postscript().
+  </p>
+  <p>
+    Plotting to cairo_pdf() just works.
+  </p>
+  <p>
+    Plotting to svg() just works (Cairo again).
+  </p>
+
+  <h3>
+    Ubuntu Linux, en_US.UTF-8 locale, R Studio
+  </h3>
+  <h4>Input</h4>
+  <h4>Output</h4>
+  <p>
+    Same as for GNOME terminal
+  </p>
+
+  <h3>
+    Ubuntu Linux, en_US.UTF-8 locale, Emacs
+  </h3>
+  <h4>Input</h4>
+  <h4>Output</h4>
+  <p>
+    Same as for GNOME terminal
+  </p>
+
+  <h3>Windows 10, R 3.4.2</h3>
+  <h4>Input</h4>
+  <h4>Output</h4>
+  <p>
+    Plotting on screen (Windows device) just works.
+    Should be same for raster devices like png().
+  </p>
+  <p>
+    win.metafile() just works!
+    As does Save as Metafile menu.
+  </p>
+  <p>
+    Plotting to pdf() fails (just get a normal "a").
+    Save as PDF from menu produces "a" AND two dots!
+  </p>
+  <p>
+    Plotting to cairo_pdf() just works.
+  </p>
+  <p>
+    Plotting to svg() just works (Cairo again).
+  </p>
+
+  <p>macOS</p>
+  <p>
+    I got nuthin.
+  </p>
+-->
+
+  <h2><a name="summary">Summary</a></h2>
+  <p>
+    There are three issues involved with correctly producing
+    macron-accented text in R graphics:
+  </p>
+  <ul>
+    <li>
+      The input keystrokes depend on the operating system, but
+      an escape sequence, like "\u101" for "&#257;",
+      should always work.    
+    </li>
+    <li>
+      We have to use a font that contains the accented characters.
+    </li>
+    <li>
+      The graphics format is important and if we want
+      PDF, the simplest solution is to use the <code>cairo_pdf</code> device.
+    </li>
+  </ul>
+
+  <h2><a name="discussion">Discussion</a></h2>
+  <p>
+    The problems that can arise and the exact solutions
+    will depend on which operating system (version) and which version 
+    of R we are using and which interface to R we are using (at least).
+    All of the examples used in this document
+    were run on either Windows or Linux (Windows 10 and
+    Ubuntu 16.04 to be more precise) and all examples were 
+    run on a recent version of R (3.4.0 at least).
+    Some of the statements in this document are therefore too
+    sweeping and general and will no doubt be untrue for some
+    combinations of operating system and R version.
+    While there are too many combinations of different operating systems,
+    different software and 
+    different software versions to cover all possibilities,
+    if we encounter a combination not covered explicitly in this
+    document, hopefully the general ideas of input methods, fonts, 
+    and encodings will help to explore and discover an effective solution.
+  </p>
+
+  <h2><a name="sources">Sources</a></h2>
+  <p>
+    <a href="https://kupu.maori.nz/">Kupu o te R&#257;</a> is a
+    M&#257;ori word-of-the-day web site.  It includes information
+    on <a href="https://kupu.maori.nz/about/macrons-keyboard-setup">how 
+    to enter macron-accented characters</a> in different Operating
+    Systems and how to obtain font support.
+  </p>
+  <p>
+    The M&#257;ori Language Commission's 
+    <a href="http://www.tetaurawhiri.govt.nz/assets/Uploads/Corporate-docs/Orthographic-conventions/Guidelines-for-Maori-Language-Orthography.pdf">Guidelines 
+    for  M&#257;ori Language Orthography</a> contains detailed information
+    about when to use (and when not to use) macrons in written M&#257;ori.
+  </p>
+  <p>
+    Stephen Cope (Kimihia), has a page about
+    <a href="https://www.stat.auckland.ac.nz/~kimihia/maori-keyboard">typing 
+    M&#257;ori easily</a> and 
+    <a href="https://www.stat.auckland.ac.nz/~kimihia/unicode-macrons">Unicode
+    Macros, mainly for Te Reo M&#257;ori</a>.
+    Stephen also links to an 
+    <a href="http://maori.typeit.org/">online M&#257;ori keyboard</a>.
+  </p>
+  <p>
+    Michael Scroggie has a 
+    <a href="https://scrogster.wordpress.com/category/r/">blog post</a>
+    where he defines a simple function to substitute special character
+    sequences with Unicode escape sequences to get M&#257;ori accents in
+    R graphics.
+  </p>
+<!--  <p>
+    <a href="http://www.temarareo.org/PAPAKUPU/dictionary-searchresults/maori_fonts.htm">This page</a> 
+    has links to a Maori font pack that has macronized vowels in place
+    of umlauted vowels BUT the zip file link does not work.
+  </p>
+  -->
+
+  <h2><a name="Resources">Resources</a></h2>
+  <ul>
+    <li>
+      The <a href="maori.cml">raw source file</a> for this
+      report, a <a href="maori.xml">valid XML</a>
+      transformation of the source file, a <a
+      href="maori.Rhtml">'knitr' document</a> generated from
+      the XML file, 
+      two <a href="toc.R">R</a> <a href="bib.R">files</a> and
+      the <a href="maori.bib">bibtex file</a>
+      that are used to generate the table of contents and reference sections,
+      two <a href="common.xsl">XSL</a> <a
+      href="knitr.xsl">files</a> that are used to transform the XML to
+      the 'knitr' document, and a <a href="Makefile">Makefile</a> that
+      contains code for the other transformations and coordinates
+      everything.  
+      These materials are also available
+      on <a href="https://github.com/pmur002/maori-report/releases/tag/v1">github</a>.
+    </li>
+    <li>
+      The <a href="PDF/macrons.enc">macrons.enc</a> encoding file for
+      use with the R <code>pdf</code> device.
+    </li>
+  </ul>
+
+  <h2>How to cite this document</h2>
+  <p>
+    Murrell, P. (2018). "Putting the Macron in M&#257;ori: Accented Characters in R Graphics." 
+    Technical Report 2018-03, Department of Statistics, The University of Auckland. 
+    [ <a href="how-to-cite.bib">bib</a> ] 
+  </p>
+
+  <h2><a name="references">References</a></h2>
+  <ul style="list-style-type: none">
+    <li>
+      <a name="R"></a>
+    </li>
+    <li>
+      <a name="unicode"></a>
+    </li>
+  </ul>
+
+  <hr/>
+  <p>
+    <a rel="license"
+    href="http://creativecommons.org/licenses/by/4.0/"><img class="CC"
+    alt="Creative Commons License" style="border-width:0"
+    src="https://i.creativecommons.org/l/by/4.0/88x31.png"/></a><br/><span
+    xmlns:dct="http://purl.org/dc/terms/"
+    property="dct:title">This document</span>
+    by <span xmlns:cc="http://creativecommons.org/ns#"
+    property="cc:attributionName">Paul
+    Murrell</span> is licensed under a <a rel="license"
+    href="http://creativecommons.org/licenses/by/4.0/">Creative
+    Commons Attribution 4.0 International License</a>.
+  </p>
+
+</body>
+</html>
