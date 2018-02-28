@@ -228,7 +228,8 @@ options(width=100)
     within R character vectors (not within R symbol names).
   </p>
     <p>
-    The following code reads in a 
+    To provide us with an example, we will create a plot
+    using a 
     <a href="http://archive.stats.govt.nz/browse_for_stats/snapshots-of-nz/nz-social-indicators/Home/Culture%20and%20identity/maori-lang-speakers.aspx">data set from Statistics New Zealand</a>
     that contains the percentage of the Māori population who 
     speak te reo Māori (based on the last three censuses).
@@ -247,7 +248,7 @@ speakers
     Our first attempt involves
     cutting-and-pasting an "ā" character from a Word document
     (that already contains the character ā)
-    into our R code.  Unless otherwise specified, we will be working
+    into the Rgui console.  Unless otherwise specified, we will be working
     on Windows.
   </p>
     <rcode eval="FALSE"><![CDATA[
@@ -257,7 +258,7 @@ barplot(speakers$Percent, names.arg=speakers$Census, ylab="Percent",
   ]]></rcode>
     <p>
     Unfortunately, even though we can see the "ā" character
-    in our code, it mysteriously becomes a normal "a" in the plot.
+    in the console, it mysteriously becomes a normal "a" in the plot.
   </p>
     <p>
       <img src="StatsNZ/MSNTL-cut-and-paste.png"/>
@@ -266,7 +267,8 @@ barplot(speakers$Percent, names.arg=speakers$Census, ylab="Percent",
     The problem here is partly to do with how we type a
     macron-accented character in R.  It is unlikely that we have an
     "ā" key on our keyboard, so we have to find some other way to
-    input that character.
+    input that character (like cutting and pasting from another program
+    or document).
   </p>
     <p>
     The problem is also to do with encodings (how characters are stored
@@ -400,7 +402,8 @@ dev.off()
     </p>
     <p>
     The <code>cairo_pdf</code> device works because it is based on the 
-    Cairo Graphics library.  The standard SVG graphics device is also
+    Cairo Graphics library.  The standard SVG graphics device 
+    (provided by the <code>svg</code> function) is also
     based on Cairo Graphics, so it works with this example too.
   </p>
     <h3>Fonts</h3>
@@ -432,8 +435,8 @@ barplot(speakers$Percent, names.arg=speakers$Census, ylab="Percent",
   </p>
     <p>
     On Linux, with Cairo graphics support, we should be able to simply 
-    specify the name of any font that has been installed on the machine
-    for producing plots on screen (and in raster formats).
+    specify the name of any font that has been installed on our system
+    in order to produce plots on screen (and in raster formats).
   </p>
     <p>
     However, for Windows, and for PDF output, we need to register a font
@@ -607,7 +610,8 @@ WindowsFonts("Microsoft New Tai Lue"=WindowsFont("Microsoft New Tai Lue"))
   </p>
     <p>
     On Windows, the operating system allows us to type a UNICODE code point
-    followed by Alt-x, but this is not supported by all software.
+    followed by Alt-x (e.g., 101 followed by Alt-x), 
+    but this is not supported by all software.
     For example, this works in Word, but unfortunately not in Rgui or 
     <a href="https://www.rstudio.com/">RStudio</a>.
   </p>
@@ -718,8 +722,8 @@ iconv("\u101", from="UTF-8", to="CP1252//TRANSLIT")
   ]]></rcode>
     <p>
     The above description and demonstration hopefully helps to explain how the
-    original cut-and-paste problem occurred (R on Windows was using CP1252
-    for input
+    original cut-and-paste problem occurred (R on Windows was using one
+    encoding for input
     and Word was a different encoding and the conversion between encodings 
     changed "ā" to "a").
   </p>
@@ -742,7 +746,7 @@ iconv("\u101", from="UTF-8", to="ISO-8859-1//TRANSLIT")
     The key is that we need to specify for the PDF device 
     a single-byte encoding that contains 
     the "ā" character (plus other macron-accented characters).
-    The <code>pdf</code> 
+    Fortunately, the <code>pdf</code> 
     function has an <code>encoding</code> argument that allows
     us to specify an encoding file.
     R comes with several standard encoding files, including ISOLatin1.enc (for
@@ -814,6 +818,9 @@ grid.text("\020 \021 \022 \023 \024 \030 \031 \032 \033 \034",
 dev.off()
   ]]></rcode>
     <p>
+      <img src="PDF/macrons-embed-pdf.png"/>
+    </p>
+    <p>
     Another important detail, especially if a PDF plot is to be 
     embedded within a larger report, such as a LaTeX document, is
     to make sure that the font is embedded in the PDF file.
@@ -828,9 +835,6 @@ embedFonts("PDF/macrons.pdf", outfile="PDF/macrons-embed.pdf")
     <rcode echo="FALSE"><![CDATA[
 system("convert -density 69 PDF/macrons-embed.pdf PDF/macrons-embed-pdf.png")
   ]]></rcode>
-    <p>
-      <img src="PDF/macrons-embed-pdf.png"/>
-    </p>
     <!--
   <h2><a name="examples">Some examples</a></h2>
   <h3>
